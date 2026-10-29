@@ -15,6 +15,15 @@ if (!api.Headers.ContainsKey("x-rapidapi-key"))
     throw new InvalidOperationException(
         "API anahtarý bulunamadý.");
 
+// BookingApiService'e verilecek HttpClient
+builder.Services.AddHttpClient<IBookingService, BookingApiService>(client =>
+{
+    client.BaseAddress = new Uri(api.BaseUrl);
+    client.Timeout = TimeSpan.FromSeconds(api.TimeoutSeconds);
+
+    foreach (var header in api.Headers)
+        client.DefaultRequestHeaders.Add(header.Key, header.Value);
+});
 
 var app = builder.Build();
 
