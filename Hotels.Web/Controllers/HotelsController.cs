@@ -11,8 +11,8 @@ namespace Hotels.Web.Controllers
         public async Task<IActionResult> Index(HotelSearchViewModel search)
         {
             if (!ModelState.IsValid)
-                return RedirectToAction("Index", "Home",search);
-             
+                return View("~/Views/Home/Index.cshtml", search);
+
 
             var model = new HotelListViewModel { Search = search };
             try

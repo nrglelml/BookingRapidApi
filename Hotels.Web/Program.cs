@@ -4,7 +4,17 @@ using Hotels.Web.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews(options =>
+{
+    var messages = options.ModelBindingMessageProvider;
+    messages.SetValueMustNotBeNullAccessor(_ => "Bu alan zorunludur.");
+    messages.SetValueIsInvalidAccessor(value => $"'{value}' geçerli bir deðer deðil.");
+    messages.SetAttemptedValueIsInvalidAccessor((value, field) => $"'{value}' geçerli bir deðer deðil.");
+    messages.SetValueMustBeANumberAccessor(field => "Bu alan bir sayý olmalýdýr.");
+    messages.SetMissingBindRequiredValueAccessor(field => "Bu alan zorunludur.");
+    messages.SetMissingKeyOrValueAccessor(() => "Bu alan zorunludur.");
+    messages.SetUnknownValueIsInvalidAccessor(field => "Girilen deðer geçersiz.");
+});
 
 var apiSection = builder.Configuration.GetSection(RapidApiOptions.SectionName);
 builder.Services.Configure<RapidApiOptions>(apiSection);
