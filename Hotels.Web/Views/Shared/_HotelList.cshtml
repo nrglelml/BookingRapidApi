@@ -7,11 +7,15 @@
 }
 
 
-    <div class="col-lg-9">
+    
         <div class="hotel-list">
 
             @foreach (var hotel in Model.Hotels)
             {
+        var hotelRoute = new Dictionary<string, string>(detailRoute)
+        {
+            ["id"] = hotel.Id.ToString()
+        };
                 <article class="hotel-card">
                     <div class="hotel-media">
                         <img src="@(hotel.PhotoUrl ?? Url.Content("~/no_image.png"))" alt="@hotel.Name" loading="lazy">
@@ -20,7 +24,9 @@
                     </div>
 
                     <div class="hotel-info">
-                        <h3 class="hotel-name"><a href="/Hotels/Details/@hotel.Id">@hotel.Name</a></h3>
+                <h3 class="hotel-name">
+                    <a asp-controller="Hotels" asp-action="Details"  asp-all-route-data="hotelRoute">@hotel.Name</a>
+                </h3>
 
                         <div class="hotel-stars">
                             @if (hotel.Stars is > 0)
@@ -67,15 +73,13 @@
                             }
 
 
-                            <a href="/Hotels/Details/@hotel.Id" class="btn btn-detail">Detayları Gör</a>
+                    <a asp-controller="Hotels" asp-action="Details" asp-all-route-data="hotelRoute" class="btn btn-detail">Detayları Gör</a>
                         </div>
                     </div>
                 </article>
             }
 
-            
-
-
+           
 
 
         </div>
@@ -142,4 +146,4 @@
                 </ul>
             </nav>
         }
-    </div>
+

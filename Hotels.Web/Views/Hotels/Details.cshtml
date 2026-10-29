@@ -1,7 +1,318 @@
-﻿
+﻿@model HotelDetailViewModel
 @{
-    ViewData["Title"] = "Details";
+    var fullAddress = string.Join(", ",
+         new[] { Model.Address, Model.City, Model.Country }.Where(s => !string.IsNullOrWhiteSpace(s)));
+    var tr = new CultureInfo("tr-TR");
 }
 
-<h1>Details</h1>
+@if (Model.ErrorMessage is not null)
+{
+    <section class="container py-5">
+        <div class="alert alert-danger" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> @Model.ErrorMessage
+        </div>
+        <a asp-action="Index" asp-all-route-data="@Model.Search.ToRouteValues()" class="btn btn-primary-sf">Sonuçlara dön</a>
+    </section>
+    return;
+}
+
+<main class="hotel-page"
+      data-hotel-id="101"
+      data-city="Milano" data-country="İtalya"
+      data-latitude="45.4842" data-longitude="9.2040"
+      data-checkin="2026-10-28" data-checkout="2026-10-31"
+      data-currency="EUR">
+
+    <div class="container">
+
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb sf-breadcrumb">
+
+                <li class="breadcrumb-item"><a asp-action="Index" asp-controller="Home">Ana Sayfa</a></li>
+                <li class="breadcrumb-item"><a href="">Oteller</a></li>
+                <li class="breadcrumb-item"><a href="">@Model.City</a></li>
+                <li class="breadcrumb-item active" aria-current="page">@Model.Name</li>
+            </ol>
+        </nav>
+
+        <!-- Hotel Heading -->
+        <section class="hotel-heading">
+            <div class="heading-main">
+                
+                <h1 class="hotel-title">@Model.Name</h1>
+                <div class="hotel-stars">
+                    @if (Model.Stars is > 0)
+                    {
+                        <span class="stars" aria-label="@Model.Stars yıldız">@(new string('★', Model.Stars.Value))</span>
+                    }
+                  
+                </div>
+                <p class="hotel-address">
+                    <i class="bi bi-geo-alt"></i>
+                    <span>@Model.Address, @Model.City, @Model.Country</span>
+                    <a href="@Model.MapUrl" target="_blank" class="map-link">Haritada Göster</a>
+                </p>
+            </div>
+
+            <div class="heading-side">
+                <div class="heading-rating">
+                    <div class="rating-text">
+                        <strong>@Model.RatingText</strong>
+                        <span>@Model.ReviewCount değerlendirme</span>
+                    </div>
+  
+                    <span class="rating-score rating-score-lg">@Model.Rating</span>
+                </div>
+                <div class="heading-actions">
+                    <button type="button" class="icon-btn fav-btn" aria-label="Favorilere ekle"><i class="bi bi-heart"></i></button>
+                    <button type="button" class="icon-btn" aria-label="Paylaş"><i class="bi bi-share"></i></button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Hotel Gallery -->
+        @if (Model.Photos.Count > 0)
+        {
+            // Büyük görsel
+            var mainPhoto = Model.Photos[0].Replace("square1024", "max1024x768");
+            var thumbs = Model.Photos.Skip(1).Take(4).ToList();
+            var remaining = Model.Photos.Count - 5;
+
+            <section class="hotel-gallery" aria-label="Otel fotoğrafları">
+                <a href="#hotelPhotos" class="gallery-item gallery-main">
+                    <img src="@mainPhoto" alt="@Model.Name">
+                </a>
+
+                @for (var i = 0; i < thumbs.Count; i++)
+                {
+                    // Son küçük görselin üstüne "+N Fotoğraf" yazısı gelir
+                    var showMore = i == thumbs.Count - 1 && remaining > 0;
+
+                    <a href="#hotelPhotos" class="gallery-item @(showMore ? "gallery-more" : "")">
+                        <img src="@thumbs[i]" alt="@Model.Name fotoğraf @(i + 2)" loading="lazy">
+                        @if (showMore)
+                        {
+                            <span class="gallery-overlay"><i class="bi bi-images"></i> +@remaining Fotoğraf</span>
+                        }
+                    </a>
+                }
+            </section>
+        }
+        else
+        {
+            <section class="hotel-gallery" aria-label="Otel fotoğrafları">
+                <div class="gallery-item gallery-main">
+                    <img src="~/no_image.png" alt="Bu otel için fotoğraf bulunmuyor">
+                </div>
+            </section>
+        }
+        <div class="row g-4 g-xl-5 detail-layout">
+
+            <!-- Sol kolon: detay içerikleri -->
+            <div class="col-lg-8">
+
+                <!-- Hotel About -->
+                <section class="detail-block" id="about">
+                    <h2 class="block-title">Otel Hakkında</h2>
+                    <!-- Model.Description -->
+                    <div class="about-text">
+                        @if (Model.DescriptionParagraphs.Count() > 0)
+                        {
+                            @foreach(var p in Model.DescriptionParagraphs)
+                            {
+                                <p>@p</p>
+                            }
+                        }
+                      
+                    </div>
+                   
+                </section>
+
+                <!-- Facilities -->
+                @if (Model.Facilities.Count > 0)
+                {
+                    <section class="detail-block" id="facilities">
+                        <h2 class="block-title">Popüler Özellikler</h2>
+                        <div class="row g-3 facility-grid">
+                            @foreach (var facility in Model.Facilities)
+                            {
+                                <div class="col-6 col-md-4">
+                                    <div class="facility-item">
+                                        <span class="facility-icon"><i class="bi @facility.Icon"></i></span>
+                                        <span class="facility-text"><strong>@facility.Name</strong></span>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </section>
+                }
+                <!-- Location -->
+                <section class="detail-block" id="location">
+                    <h2 class="block-title">Otel Konumu</h2>
+                    <div class="location-card">
+
+                        @if (Model.MapEmbedUrl is not null)
+                        {
+                            <div class="map-placeholder">
+                                <iframe src="@Model.MapEmbedUrl"
+                                        title="@Model.Name harita konumu"
+                                        loading="lazy"
+                                        referrerpolicy="no-referrer-when-downgrade"
+                                        allowfullscreen></iframe>
+                            </div>
+                        }
+
+                        <div class="location-body">
+                            <p class="location-address">
+                                <i class="bi bi-geo-alt"></i>
+                                <span>@fullAddress</span>
+                            </p>
+
+                            @if (Model.MapUrl is not null)
+                            {
+                                <a href="@Model.MapUrl" class="map-link" target="_blank" rel="noopener">
+                                    Google Haritalar'da aç <i class="bi bi-box-arrow-up-right"></i>
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </section>
+                @if (Model.Price is not null)
+                {
+                    <section class="detail-block" id="rooms">
+                        <div class="block-head">
+                            <h2 class="block-title">Fiyat</h2>
+                            <p class="block-text">
+                                @Model.Search.CheckIn.ToString("d MMMM yyyy", tr) - @Model.Search.CheckOut.ToString("d MMMM yyyy", tr)
+                                · @Model.Search.Nights Gece · @Model.Search.Adults Yetişkin
+                                @if (Model.Search.Children > 0)
+                                {
+                                    <text>· @Model.Search.Children Çocuk</text>
+                                }
+                                · @Model.Search.Rooms Oda
+                            </p>
+                        </div>
+
+                        <div class="room-list">
+                            <article class="room-card">
+                                <div class="room-info">
+                                    <h3 class="room-name">@Model.Name</h3>
+                                    <span class="policy-text"><i class="bi bi-info-circle"></i> Oda seçenekleri ve iptal koşulları için Booking.com'u ziyaret edin.</span>
+                                </div>
+                                <div class="room-price">
+                                    <span class="price-meta">@Model.Search.Nights gece için toplam</span>
+                                    @switch (Model.Currency)
+                                    {
+                                        case "EUR":
+                                            <span class="price">€@($"{Model.Price:N2}")</span>
+                                            break;
+                                        case "TRY":
+                                            <span class="price">₺@($"{Model.Price:N2}")</span>
+                                            break;
+                                        case "GBP":
+                                            < span class= "price" >£@($"{Model.Price:N2}") </ span >
+                                            break;
+                                        default:
+                                            <span class="price">$@($"{Model.Price:N2}")</span>
+                                            break;
+                                    }
+                                  
+                                </div>
+                            </article>
+                        </div>
+                    </section>
+                }
+
+            <!-- Reviews -->
+                @if (Model.Rating is not null)
+                {
+                    <section class="detail-block" id="reviews">
+                        <h2 class="block-title">Misafir Değerlendirmeleri</h2>
+                        <div class="review-summary">
+                            <div class="review-score-box">
+                                <span class="review-big">@Model.Rating.Value.ToString("0.0", tr)</span>
+                                <strong>@Model.RatingText</strong>
+                                @if (Model.ReviewCount is > 0)
+                                {
+                                    <span>@Model.ReviewCount.Value.ToString("N0", tr) değerlendirme</span>
+                                }
+                            </div>
+                        </div>
+                    </section>
+                }
+        </div>
+
+        <!-- Booking Summary -->
+        <aside class="col-lg-4">
+            <div class="booking-card">
+                <h2 class="booking-title">Konaklama Özeti</h2>
+
+                <dl class="booking-list">
+                    <div><dt><i class="bi bi-box-arrow-in-right"></i> Giriş</dt><dd>@Model.Search.CheckIn.ToString("dd-MM-yyyy")</dd></div>
+                        <div><dt><i class="bi bi-box-arrow-right"></i> Çıkış</dt><dd>@Model.Search.CheckOut.ToString("dd-MM-yyyy")</dd></div>
+                        <div><dt><i class="bi bi-moon"></i> Süre</dt><dd>@Model.Search.Nights Gece</dd></div>
+                        <div><dt><i class="bi bi-people"></i> Misafir</dt><dd>@Model.Search.Adults Yetişkin, @Model.Search.Children Çocuk></dd></div>
+                    <div><dt><i class="bi bi-door-closed"></i> Oda</dt><dd>@Model.Search.Rooms Oda</dd></div>
+                </dl>
+
+                    <div class="booking-price">
+                        <span class="price-meta">Toplam fiyat</span>
+                        @switch (Model.Currency)
+                        {
+                            case "EUR":
+                                <span class="price price-lg">€@($"{Model.Price:N2}")</span>
+                                break;
+                            case "TRY":
+                                <span class="price price-lg">₺@($"{Model.Price:N2}")</span>
+                                break;
+                            case "GBP":
+                                < span class="price price-lg" >£@($"{Model.Price:N2}") </ span >
+                                break;
+                            default:
+                                <span class="price price-lg">$@($"{Model.Price:N2}")</span>
+                                break;
+                        }
+                        <span class="price-meta">@Model.Search.Nights gece için</span>
+                    </div>
+                    <a asp-action="Index" asp-all-route-data="@Model.Search.ToRouteValues()" class="btn btn-book w-100">
+                        <i class="bi bi-arrow-left"></i> Diğer otellere dön
+                    </a>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Hotel Photos Slider -->
+        @if (Model.Photos.Count > 0)
+        {
+            <section class="detail-block photos-block" id="hotelPhotos">
+                <div class="photos-head">
+                    <div>
+                        <h2 class="block-title">@Model.Name Fotoğrafları</h2>
+                        <p class="block-text">Odaları, ortak alanları ve otelin sunduğu imkanları daha yakından inceleyin.</p>
+                    </div>
+                    <div class="slider-nav">
+                        <button type="button" class="slider-btn" data-dir="-1" aria-label="Önceki fotoğraflar"><i class="bi bi-chevron-left"></i></button>
+                        <button type="button" class="slider-btn" data-dir="1" aria-label="Sonraki fotoğraflar"><i class="bi bi-chevron-right"></i></button>
+                    </div>
+                </div>
+
+                <div class="photo-track" id="photoTrack" tabindex="0" aria-label="Otel fotoğrafları kaydırılabilir alan">
+                    @for (var i = 0; i < Model.Photos.Count; i++)
+                    {
+                        var photo = Model.Photos[i];
+                        <figure class="photo-item">
+                            <a href="@photo.Replace("square1024", "max1280x900")" class="photo-frame"
+                               target="_blank" rel="noopener" aria-label="Fotoğraf @(i + 1)'i büyük boyutta aç">
+                                <img src="@photo" alt="@Model.Name fotoğraf @(i + 1)" loading="lazy">
+                                <span class="photo-zoom"><i class="bi bi-arrows-fullscreen"></i></span>
+                            </a>
+                            <figcaption>Fotoğraf @(i + 1) / @Model.Photos.Count</figcaption>
+                        </figure>
+                    }
+                </div>
+            </section>
+        }
+    </div>
+</main>
 

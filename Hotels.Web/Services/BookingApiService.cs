@@ -105,7 +105,7 @@ namespace Hotels.Web.Services
                 _logger.LogError(ex, "Bağlantı hatası: {Url}", url);
                 throw new BookingApiException("Booking servisine bağlanılamadı. İnternet bağlantınızı kontrol edin.", ex);
             }
-
+            
             if (!response.IsSuccessStatusCode)
             {
                 var body = await response.Content.ReadAsStringAsync();
@@ -121,7 +121,7 @@ namespace Hotels.Web.Services
                 };
             }
 
-         
+
             ApiResponse<T>? result;
             try
             {
@@ -129,6 +129,7 @@ namespace Hotels.Web.Services
             }
             catch (JsonException ex)
             {
+
                 _logger.LogError(ex, "API yanıtı okunamadı: {Url}", url);
                 throw new BookingApiException("Booking servisinden beklenmeyen bir yanıt geldi.", ex);
             }
@@ -138,11 +139,12 @@ namespace Hotels.Web.Services
             {
                 _logger.LogWarning("API status=false: {Url} -> {Message}", url, result?.Message);
                 throw new BookingApiException("Arama yapılamadı. Girdiğiniz bilgileri kontrol edip tekrar deneyin.");
+
             }
 
             return result.Data;
-        } 
-
+        }
+    
         private static int? ParseTotalCount(string? title)//... şehri için ... adet kayıt bulundu
         {
             if (string.IsNullOrWhiteSpace(title))

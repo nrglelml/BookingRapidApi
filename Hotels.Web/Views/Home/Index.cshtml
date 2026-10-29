@@ -393,7 +393,8 @@
 
 </main>
 <!-- Sadece arayüz etkileşimi: sayaç butonları ve çocuk yaşı alanının gösterimi (veri çekme yok) -->
-@* <script>
+<script>
+    // Sayaç butonları (+ / −) ve çocuk yaşı alanının gösterimi
     document.querySelectorAll('.counter').forEach(function (counter) {
         var input = counter.querySelector('.counter-value');
         var min = parseInt(counter.dataset.min, 10);
@@ -402,7 +403,8 @@
         counter.addEventListener('click', function (e) {
             var btn = e.target.closest('.counter-btn');
             if (!btn) return;
-            var value = parseInt(input.value, 10);
+
+            var value = parseInt(input.value, 10) || 0;
             value = btn.dataset.action === 'plus' ? Math.min(value + 1, max) : Math.max(value - 1, min);
             input.value = value;
 
@@ -411,4 +413,4 @@
             }
         });
     });
-</script> *@
+</script>
