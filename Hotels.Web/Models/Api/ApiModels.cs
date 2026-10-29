@@ -67,6 +67,7 @@ namespace Hotels.Web.Models.Api
         [JsonPropertyName("product_price_breakdown")] public ProductPriceBreakdownDto? PriceBreakdown { get; set; }
         [JsonPropertyName("latitude")] public double? Latitude { get; set; }
         [JsonPropertyName("longitude")] public double? Longitude { get; set; }
+        [JsonPropertyName("propertyClass")] public int? Stars { get; set; }
     }
 
     public class HotelRawDataDto

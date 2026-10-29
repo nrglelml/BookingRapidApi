@@ -1,6 +1,7 @@
 ﻿using Hotels.Web.Models.Api;
 using Hotels.Web.Models.ViewModels;
 using Hotels.Web.Options;
+using HotelSearch.Models;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
 using System.Globalization;
@@ -76,7 +77,7 @@ namespace Hotels.Web.Services
                     Price = h.Property.PriceBreakdown?.GrossPrice?.Value,
                     Currency = h.Property.PriceBreakdown?.GrossPrice?.Currency,
                     Rating = h.Property.ReviewScore,
-                    RatingText = h.Property.ReviewScoreWord,
+                    RatingText = FacilityTranslator.RatingText(h.Property.ReviewScore),
                     ReviewCount = h.Property.ReviewCount,
                     CityName = h.Property.CityName,
                     Stars = h.Property.Stars,
@@ -158,7 +159,11 @@ namespace Hotels.Web.Services
     latitude is not null && longitude is not null
         ? string.Create(CultureInfo.InvariantCulture, $"https://www.google.com/maps?q={latitude},{longitude}")
         : null;
-
+        private static string? BuildMapEmbedUrl(double? latitude, double? longitude) =>
+    latitude is not null && longitude is not null
+        ? string.Create(CultureInfo.InvariantCulture,
+            $"https://maps.google.com/maps?q={latitude},{longitude}&z=15&output=embed")
+        : null;
 
         public async Task<HotelDetailViewModel?> GetHotelDetailsAsync(int hotelId, HotelSearchViewModel search)
         {
@@ -195,10 +200,14 @@ namespace Hotels.Web.Services
                 Rating = details.RawData?.ReviewScore,
                 Price = details.PriceBreakdown?.GrossAmount?.Value,
                 Currency = details.PriceBreakdown?.GrossAmount?.Currency,
+                Stars=details.Stars,
                 MapUrl = BuildMapUrl(details.Latitude, details.Longitude),
+                MapEmbedUrl = BuildMapEmbedUrl(details.Latitude,details.Longitude),
                 Photos = await photosTask,
                 DescriptionParagraphs=await descTask,
-                Facilities = details.FacilitiesBlock?.Facilities?.Where(f => !string.IsNullOrWhiteSpace(f.Name)).Select(f => f.Name!).Distinct().ToList() ?? new List<string>()
+                RatingText = FacilityTranslator.RatingText(details.RawData?.ReviewScore),
+                Facilities=details.FacilitiesBlock?.Facilities?.Where(f=> !string.IsNullOrWhiteSpace(f.Name)).Select(f=>FacilityTranslator.Translate(f.Name)).DistinctBy(f=>f.Name).ToList() ?? new List<FacilityItem>()
+                   // "Free WiFi" ve "WiFi" tek kutuda birleşsin
             };
 
         }
