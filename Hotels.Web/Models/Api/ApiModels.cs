@@ -94,4 +94,9 @@ namespace Hotels.Web.Models.Api
     {
         [JsonPropertyName("url")] public string? Url { get; set; }
     }
+    public class HotelDescriptionDto
+    {
+        [JsonPropertyName("descriptiontype_id")] public int? DescriptionTypeId { get; set; }
+        [JsonPropertyName("description")] public string? Description { get; set; }
+    }
 }

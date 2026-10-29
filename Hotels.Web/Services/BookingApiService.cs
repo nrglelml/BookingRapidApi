@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
 using System.Globalization;
 using System.Net;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace Hotels.Web.Services
@@ -119,7 +120,17 @@ namespace Hotels.Web.Services
                 };
             }
 
-            var result = await response.Content.ReadFromJsonAsync<ApiResponse<T>>();
+         
+            ApiResponse<T>? result;
+            try
+            {
+                result = await response.Content.ReadFromJsonAsync<ApiResponse<T>>();
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogError(ex, "API yanıtı okunamadı: {Url}", url);
+                throw new BookingApiException("Booking servisinden beklenmeyen bir yanıt geldi.", ex);
+            }
 
             // API 200 dönse bile "status": false ile hata bildirebiliyor
             if (result is null || !result.Status)
@@ -167,7 +178,8 @@ namespace Hotels.Web.Services
            
             var detailsTask=GetAsync<HotelDetailsDto>(detailsUrl);
             var photosTask = GetPhotosAsync(hotelId);
-            await Task.WhenAll(detailsTask, photosTask);
+            var descTask= GetDescriptionAsync(hotelId);
+            await Task.WhenAll(detailsTask, photosTask,descTask);
 
             var details = await detailsTask;
             if(details is null)
@@ -176,7 +188,7 @@ namespace Hotels.Web.Services
             return new HotelDetailViewModel //mapping
             {
                 Id = details.HotelId,
-                Name = details.HotelName,
+                Name = details.HotelName ?? "İsimsiz otel",
                 Address = details.Address,
                 City = details.City,
                 Country = details.Country,
@@ -185,11 +197,12 @@ namespace Hotels.Web.Services
                 Currency = details.PriceBreakdown?.GrossAmount?.Currency,
                 MapUrl = BuildMapUrl(details.Latitude, details.Longitude),
                 Photos = await photosTask,
+                DescriptionParagraphs=await descTask,
                 Facilities = details.FacilitiesBlock?.Facilities?.Where(f => !string.IsNullOrWhiteSpace(f.Name)).Select(f => f.Name!).Distinct().ToList() ?? new List<string>()
             };
 
         }
-        private async Task<List<string>> GetPhotosAsync(int id)
+        private async Task<List<string>> GetPhotosAsync(int id) //fotoğraf olmasa da hata vermemesi için
         {
             try
             {
@@ -200,6 +213,45 @@ namespace Hotels.Web.Services
             catch (BookingApiException ex)
             {
                 _logger.LogWarning(ex, "Otel fotoğrafları alınamadı. HotelId: {HotelId}", id);
+                return new List<string>();
+            }
+        }
+        private static readonly string[] DescriptionLanguages = { "tr", "en-us" };
+        private async Task<List<string>> FetchDescriptionAsync(int hotelId,string language)  // dil bariyeri için 2 ayrı fonksiyon
+        {
+                var url = QueryHelpers.AddQueryString(_endpoints.HotelDescription, new Dictionary<string, string?>
+                {
+                    ["hotel_id"] = hotelId.ToString(CultureInfo.InvariantCulture),
+                    ["languagecode"] = language
+                });
+
+                var items = await GetAsync<List<HotelDescriptionDto>>(url);
+
+                var main = items?.FirstOrDefault(d => d.DescriptionTypeId == 6) //6 numara ana tanıtım metni 6 yoksa en uzun metin
+                           ?? items?.OrderByDescending(d => d.Description?.Length ?? 0).FirstOrDefault();
+
+                // açıklamayı böl
+                return main?.Description?
+                    .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .ToList() ?? new List<string>();
+        }
+        private async Task<List<string>> GetDescriptionAsync(int hotelId) //açıklama olmasa da hata vermemesi için
+        {
+            try
+            {
+                // Türkçe açıklama yoksa İngilizceyi dene
+                foreach (var language in DescriptionLanguages)
+                {
+                    var paragraphs = await FetchDescriptionAsync(hotelId, language);
+                    if (paragraphs.Count > 0)
+                        return paragraphs;
+                }
+
+                return new List<string>();
+            }
+            catch (BookingApiException ex)
+            {
+                _logger.LogWarning(ex, "Otel açıklaması alınamadı. HotelId: {HotelId}", hotelId);
                 return new List<string>();
             }
         }

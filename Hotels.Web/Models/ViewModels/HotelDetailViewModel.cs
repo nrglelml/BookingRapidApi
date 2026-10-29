@@ -16,6 +16,7 @@
         public List<string> Facilities { get; set; } = new();
         public string? ErrorMessage { get; set; }
         public string? MapUrl { get; set; }
+        public List<string> DescriptionParagraphs { get; set; } = new();
         public HotelSearchViewModel Search { get; set; } = new(); //geri dönmek için arama bilgileri
     }
 }

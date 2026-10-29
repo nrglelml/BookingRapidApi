@@ -34,9 +34,35 @@ namespace Hotels.Web.Controllers
 
             return View(model);
         }
-        public async Task<IActionResult> Details(int id)
+        public async Task<IActionResult> Details(int id, HotelSearchViewModel search)
         {
-            return View();
+            if (!ModelState.IsValid)
+            {
+                return View(new HotelDetailViewModel
+                {
+                    Search = search,
+                    ErrorMessage = "Arama bilgileri eksik veya hatalı. Lütfen yeni bir arama yapın."
+                });
+            }
+            try
+            {
+                var hotel = await _bookingService.GetHotelDetailsAsync(id, search);
+                if(hotel is null)
+                {
+                    return View(new HotelDetailViewModel { Search = search, ErrorMessage = "Otel bulunamadı" });
+                }
+                hotel.Search= search;
+                return View(hotel);
+            }
+            catch(BookingApiException ex)
+            {
+                return View(new HotelDetailViewModel
+                {
+                    Search = search,
+                    ErrorMessage = ex.Message
+                });
+            }
+
         }
 
 
