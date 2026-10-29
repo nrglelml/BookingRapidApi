@@ -3,7 +3,7 @@
 namespace Hotels.Web.Models.Api
 {
     //API nin gönderdiği veriler
-    public class ApiResponse<T> // endpointer { "status": true, "message": "...", "data": ... } böyle dönüyor
+    public class ApiResponse<T> // endpointer { "status": true, "message": "...", "data": ... } böyle dönüyor data da hotels,meta olarak dönüyor meta= title:"198 properties around Chitota"
     {
         [JsonPropertyName("status")] public bool Status { get; set; }
         [JsonPropertyName("message")] public string? Message { get; set; }
@@ -19,8 +19,12 @@ namespace Hotels.Web.Models.Api
     public class HotelSearchDataDto
     {
         [JsonPropertyName("hotels")] public List<HotelItemDto> Hotels { get; set; } = new();
+        [JsonPropertyName("meta")] public List<SearchMetaDto>? Meta { get; set; }
     }
-
+    public class SearchMetaDto
+    {
+        [JsonPropertyName("title")] public string? Title { get; set; }
+    }
     public class HotelItemDto
     {
         [JsonPropertyName("hotel_id")] public int HotelId { get; set; }
@@ -34,6 +38,10 @@ namespace Hotels.Web.Models.Api
         [JsonPropertyName("reviewCount")] public int? ReviewCount { get; set; }
         [JsonPropertyName("photoUrls")] public List<string>? PhotoUrls { get; set; }
         [JsonPropertyName("priceBreakdown")] public PriceBreakdownDto? PriceBreakdown { get; set; }
+        [JsonPropertyName("wishlistName")] public string? CityName { get; set; }
+        [JsonPropertyName("latitude")] public double? Latitude { get; set; }
+        [JsonPropertyName("longitude")] public double? Longitude { get; set; }
+        [JsonPropertyName("propertyClass")] public int? Stars { get; set; }
     }
     public class PriceBreakdownDto
     {

@@ -23,7 +23,9 @@ namespace Hotels.Web.Controllers
                     model.ErrorMessage= $"\"{search.City}\" için bir sonuç bulunamadı. Yazımı kontrol edip tekrar deneyin.";
                 }
                 model.DestinationName = dest.Name;
-                model.Hotels = await _bookingService.SearchHotelsAsync(dest, search);
+                var result= await _bookingService.SearchHotelsAsync(dest, search);
+                model.Hotels = result.Hotels;
+                model.TotalCount = result.TotalCount;
             }
             catch (BookingApiException ex)
             {
@@ -32,7 +34,10 @@ namespace Hotels.Web.Controllers
 
             return View(model);
         }
-
+        public async Task<IActionResult> Details(int id)
+        {
+            return View();
+        }
 
 
     }

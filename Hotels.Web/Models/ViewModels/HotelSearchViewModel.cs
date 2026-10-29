@@ -32,6 +32,7 @@ namespace Hotels.Web.Models.ViewModels
         public decimal? PriceMin { get; set; }
         public decimal? PriceMax { get; set; }
         public string? SortBy { get; set; }
+        [Range(1, 50, ErrorMessage = "Geçersiz sayfa numarası.")]
         public int Page { get; set; } = 1;
 
         public int Nights => (CheckOut.Date - CheckIn.Date).Days;
@@ -50,5 +51,28 @@ namespace Hotels.Web.Models.ViewModels
                 yield return new ValidationResult("Geçersiz para birimi.", new[] { nameof(Currency) });
         }
         public static readonly string[] SupportedCurrencies = { "EUR", "USD", "TRY", "GBP" };
+
+
+
+        public Dictionary<string, string> ToRouteValues(int? page = null)
+        {
+            var values = new Dictionary<string, string>
+            {
+                ["City"] = City,
+                ["CheckIn"] = CheckIn.ToString("yyyy-MM-dd") ?? "",
+                ["CheckOut"] = CheckOut.ToString("yyyy-MM-dd") ?? "",
+                ["Adults"] = Adults.ToString(),
+                ["Children"] = Children.ToString(),
+                ["ChildAge"] = ChildAge.ToString(),
+                ["Rooms"] = Rooms.ToString(),
+                ["Currency"] = Currency,
+                ["Page"] = (page ?? Page).ToString()
+            };
+
+            if (!string.IsNullOrWhiteSpace(SortBy))
+                values["SortBy"] = SortBy;
+
+            return values;
+        }
     }
 }

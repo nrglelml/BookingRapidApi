@@ -1,0 +1,145 @@
+﻿@model HotelListViewModel
+@{
+    var tr = new CultureInfo("tr-TR");
+    var guestText = $"{Model.Search.Nights} gece, {Model.Search.Adults} yetişkin"
+              + (Model.Search.Children > 0 ? $", {Model.Search.Children} çocuk" : "");
+    var detailRoute = Model.Search.ToRouteValues();
+}
+
+
+    <div class="col-lg-9">
+        <div class="hotel-list">
+
+            @foreach (var hotel in Model.Hotels)
+            {
+                <article class="hotel-card">
+                    <div class="hotel-media">
+                        <img src="@(hotel.PhotoUrl ?? Url.Content("~/no_image.png"))" alt="@hotel.Name" loading="lazy">
+                        <button type="button" class="fav-btn" aria-label="Favorilere ekle"><i class="bi bi-heart"></i></button>
+                        <span class="media-badge">Popüler Seçim</span>
+                    </div>
+
+                    <div class="hotel-info">
+                        <h3 class="hotel-name"><a href="/Hotels/Details/@hotel.Id">@hotel.Name</a></h3>
+
+                        <div class="hotel-stars">
+                            @if (hotel.Stars is > 0)
+                            {
+                                <span class="stars-inline" aria-label="@hotel.Stars yıldız">@(new string('★', hotel.Stars.Value))</span>
+                            }
+                        </div>
+
+                        <p class="hotel-location">
+                            <i class="bi bi-geo-alt"></i>
+                            <span>@(hotel.CityName ?? Model.DestinationName)</span>
+                            @if (hotel.MapUrl is not null)
+                            {
+                                <a href="@hotel.MapUrl" class="map-link" target="_blank" rel="noopener">Haritada göster</a>
+                            }
+                        </p>
+
+                    </div>
+
+                    <div class="hotel-side">
+                        <div class="rating">
+                            <div class="rating-text">
+                                <strong>@hotel.RatingText</strong>
+                                <span>@hotel.ReviewCount değerlendirme</span>
+                            </div>
+                            <span class="rating-score">@hotel.Rating</span>
+                        </div>
+                        <div class="price-box">
+                            <span class="price-meta">@guestText</span>
+                            @switch (hotel.Currency)
+                            {
+                                case "EUR":
+                                    <span class="price">€@($"{hotel.Price:N2}")</span>
+                                    break;
+                                case "TRY":
+                                    <span class="price">₺@($"{hotel.Price:N2}")</span>
+                                    break;
+                                case "GBP":
+                                    < span class= "price" >£@($"{hotel.Price:N2}") </ span >
+                                    break;
+                                default:
+                                    <span class="price">$@($"{hotel.Price:N2}")</span>
+                                    break;
+                            }
+
+
+                            <a href="/Hotels/Details/@hotel.Id" class="btn btn-detail">Detayları Gör</a>
+                        </div>
+                    </div>
+                </article>
+            }
+
+            
+
+
+
+
+        </div>
+
+        @if (Model.HasPreviousPage || Model.HasNextPage)
+        {
+            <nav class="pagination-wrap" aria-label="Sonuç sayfaları">
+               
+                <span class="pagination-info">
+                    @Model.FirstIndex–@Model.LastIndex
+                    @if (Model.TotalCount is not null)
+                    {
+                        <text>/ @Model.TotalCount.Value.ToString("N0", tr)</text>
+                    }
+                    sonuç
+                </span>
+
+                <ul class="pagination sf-pagination mb-0">
+                    @* Önceki *@
+                    @if (Model.HasPreviousPage)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" asp-action="Index" asp-all-route-data="@Model.Search.ToRouteValues(Model.CurrentPage - 1)" aria-label="Önceki sayfa">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-left"></i></span></li>
+                    }
+
+                    @* Önceki en fazla 2 sayfa + şimdiki sayfa *@
+                    @for (var p = Math.Max(1, Model.CurrentPage - 2); p <= Model.CurrentPage; p++)
+                    {
+                        if (p == Model.CurrentPage)
+                        {
+                            <li class="page-item active" aria-current="page"><span class="page-link">@p</span></li>
+                        }
+                        else
+                        {
+                            <li class="page-item">
+                                <a class="page-link" asp-action="Index" asp-all-route-data="@Model.Search.ToRouteValues(p)">@p</a>
+                            </li>
+                        }
+                    }
+
+                    @* Sonraki *@
+                    @if (Model.HasNextPage)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" asp-action="Index" asp-all-route-data="@Model.Search.ToRouteValues(Model.CurrentPage + 1)">@(Model.CurrentPage + 1)</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" asp-action="Index" asp-all-route-data="@Model.Search.ToRouteValues(Model.CurrentPage + 1)" aria-label="Sonraki sayfa">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-right"></i></span></li>
+                    }
+                </ul>
+            </nav>
+        }
+    </div>

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
 using System.Globalization;
 using System.Net;
+using System.Text.RegularExpressions;
 
 namespace Hotels.Web.Services
 {
@@ -33,7 +34,7 @@ namespace Hotels.Web.Services
             return match is null ? null : new Destination(match.DestId, match.SearchType, match.Name ?? cityName);
         }
 
-        public async Task<List<HotelCardViewModel>> SearchHotelsAsync(Destination destination, HotelSearchViewModel search)
+        public async Task<HotelSearchResult> SearchHotelsAsync(Destination destination, HotelSearchViewModel search)
         {
             var inv = CultureInfo.InvariantCulture;
 
@@ -59,10 +60,11 @@ namespace Hotels.Web.Services
             var url = QueryHelpers.AddQueryString(_endpoints.SearchHotels, query);
             var data = await GetAsync<HotelSearchDataDto>(url);
 
+           
             if (data?.Hotels is null)
-                return new List<HotelCardViewModel>();
+                return new HotelSearchResult(new List<HotelCardViewModel>(), null);
 
-            return data.Hotels
+             var hotels= data.Hotels
                 .Where(h => h.Property is not null)
                 .Select(h => new HotelCardViewModel
                 {
@@ -74,9 +76,16 @@ namespace Hotels.Web.Services
                     Currency = h.Property.PriceBreakdown?.GrossPrice?.Currency,
                     Rating = h.Property.ReviewScore,
                     RatingText = h.Property.ReviewScoreWord,
-                    ReviewCount = h.Property.ReviewCount
+                    ReviewCount = h.Property.ReviewCount,
+                    CityName = h.Property.CityName,
+                    Stars = h.Property.Stars,
+                    MapUrl = h.Property.Latitude is not null && h.Property.Longitude is not null
+    ? string.Create(CultureInfo.InvariantCulture,
+        $"https://www.google.com/maps?q={h.Property.Latitude},{h.Property.Longitude}")
+    : null,
                 })
                 .ToList();
+            return new HotelSearchResult(hotels, ParseTotalCount(data.Meta?.FirstOrDefault()?.Title)); // arama sonucu kaç taneyse onun için
         }
 
         //hatayı yakalamak için
@@ -123,6 +132,19 @@ namespace Hotels.Web.Services
             }
 
             return result.Data;
+        } 
+
+        private static int? ParseTotalCount(string? title)//... şehri için ... adet kayıt bulundu
+        {
+            if (string.IsNullOrWhiteSpace(title))
+                return null;
+
+            var match = Regex.Match(title, @"\d[\d.,]*");
+            if (!match.Success)
+                return null;
+
+            var digits = match.Value.Replace(".", "").Replace(",", "");
+            return int.TryParse(digits, out var total) ? total : null;
         }
     }
 }

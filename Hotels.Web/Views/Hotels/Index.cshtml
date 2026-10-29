@@ -1,0 +1,433 @@
+﻿@model HotelListViewModel
+@{
+    ViewData["Title"] = "Index";
+    var tr = new CultureInfo("tr-TR");
+}
+
+<main>
+
+    <!-- Search Summary -->
+    <section class="search-summary">
+        <div class="container">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb sf-breadcrumb">
+                    <li class="breadcrumb-item"><a href="index.html">Ana Sayfa</a></li>
+                    <li class="breadcrumb-item"><a href="#">Oteller</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">@Model.Search.City</li>
+                </ol>
+            </nav>
+
+            <h1 class="page-title">@Model.Search.City Otelleri</h1>
+            <p class="page-text">@Model.Search.City bölgesindeki konaklama seçeneklerini keşfedin.</p>
+
+
+            <form class="summary-panel" asp-action="Index" asp-controller="Hotels" method="get" id="searchForm">
+                <div class="row g-2 g-lg-0 align-items-stretch">
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <label class="summary-field" for="sDestination">
+                            <i class="bi bi-geo-alt"></i>
+                            <span class="summary-body">
+                                <span class="summary-label">Lokasyon</span>
+                                <input type="text" id="sDestination"asp-for="Search.City" name="City" class="summary-input" >
+                            </span>
+                        </label>
+                    </div>
+                    <div class="col-6 col-md-3 col-lg">
+                        <label class="summary-field" for="sCheckin">
+                            <i class="bi bi-calendar3"></i>
+                            <span class="summary-body">
+                                <span class="summary-label">Giriş</span>
+                                <input id="scheckin" asp-for="Search.CheckIn" class="summary-input" name="CheckIn" min="@DateTime.Today.ToString("yyyy-MM-dd")">
+                            </span>
+                        </label>
+                    </div>
+                    <div class="col-6 col-md-3 col-lg">
+                        <label class="summary-field" for="sCheckout">
+                            <i class="bi bi-calendar3"></i>
+                            <span class="summary-body">
+                                <span class="summary-label">Çıkış</span>
+                                <input id="scheckout" asp-for="Search.CheckOut" class="summary-input" name="CheckOut" min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")">
+                            </span>
+                        </label>
+                    </div>
+                    <div class="col-12 col-md-4 col-lg">
+                        <div class="summary-field">
+                            <i class="bi bi-people"></i>
+                            <span class="summary-body">
+                                <span class="summary-label">Misafir</span>
+                                <span class="summary-value">@Model.Search.Adults Yetişkin, @Model.Search.Children Çocuk</span>
+                                <input type="hidden" name="Adults" value="@Model.Search.Adults" />
+                                <input type="hidden" name="Children" value="@Model.Search.Children" />
+                                <input type="hidden" name="ChildAge" value="@Model.Search.ChildAge" />
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4 col-lg-auto">
+                        <div class="summary-field">
+                            <i class="bi bi-door-closed"></i>
+                            <span class="summary-body">
+                                <span class="summary-label">Oda</span>
+                                <span class="summary-value">@Model.Search.Rooms Oda</span>
+                                <input type="hidden" name="Rooms" value="@Model.Search.Rooms" />
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4 col-lg-auto">
+                        <label class="summary-field" for="sCurrency">
+                            <span class="summary-body">
+                                <span class="summary-label">Para Birimi</span>
+                                <select asp-for="Search.Currency" id="scurrency" name="Currency"
+                                        asp-items="@(new SelectList(HotelSearchViewModel.SupportedCurrencies))"
+                                        class="summary-input summary-select"></select>
+                                
+                            </span>
+                        </label>
+                    </div>
+                    <div class="col-12 col-lg-auto summary-btn-col">
+                        <button type="submit" class="btn btn-update w-100" aria-label="Aramayı Güncelle">
+                            <i class="bi bi-search"></i>
+                            <span class="btn-update-label">Aramayı Güncelle</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <section class="results-section">
+        <div class="container">
+
+            <!-- Results Toolbar -->
+            <div class="results-toolbar">
+                <div class="results-count">
+                    <h2>
+                        @if (Model.TotalCount is not null)
+                        {
+                            @:@Model.DestinationName için <strong>@Model.TotalCount.Value.ToString("N0", tr) konaklama</strong> bulundu
+                        }
+                        else
+                        {
+                            @:@Model.DestinationName için konaklamalar <strong>· Sayfa @Model.CurrentPage</strong>
+                        }
+                    </h2>
+                  
+                    <span>@Model.Search.CheckIn.ToString("d MMMM", tr) – @Model.Search.CheckOut.ToString("d MMMM yyyy", tr), @Model.Search.Nights gece</span>
+                </div>
+
+                <div class="toolbar-actions">
+                    <!-- Mobil filtre butonu (lg altında görünür) -->
+                    <button class="btn btn-filter d-lg-none" type="button" data-bs-toggle="offcanvas"
+                            data-bs-target="#filtersPanel" aria-controls="filtersPanel">
+                        <i class="bi bi-sliders"></i> Filtrele
+                    </button>
+
+                    <div class="sort-box">
+                        <label for="sortBy"><i class="bi bi-arrow-down-up"></i> Sırala</label>
+                        <select id="sortBy" name="sortBy" class="form-select sort-select">
+                            <option value="recommended" selected>Önerilen</option>
+                            <option value="price_asc">En Düşük Fiyat</option>
+                            <option value="score_desc">En Yüksek Puan</option>
+                            <option value="stars_desc">Yıldıza Göre</option>
+                            <option value="reviews_desc">En Çok Değerlendirilen</option>
+                        </select>
+                    </div>
+
+                    <div class="view-switch d-none d-md-inline-flex" role="group" aria-label="Görünüm">
+                        <button type="button" class="active" aria-pressed="true" aria-label="Liste görünümü"><i class="bi bi-list-ul"></i></button>
+                        <button type="button" aria-pressed="false" aria-label="Grid görünümü"><i class="bi bi-grid"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                @if (Model.ErrorMessage is not null)
+                {
+                    <div class="alert alert-danger" role="alert">
+                        <i class="bi bi-exclamation-triangle"></i> @Model.ErrorMessage
+                    </div>
+                }
+                else if (Model.Hotels.Count == 0 && Model.CurrentPage > 1)
+                {
+                    <div class="text-center py-5">
+                        <h3>Bu sayfada başka sonuç yok</h3>
+                        <a asp-action="Index" asp-all-route-data="@Model.Search.ToRouteValues(1)" class="btn btn-primary-sf">İlk sayfaya dön</a>
+                    </div>
+                }
+                else if (Model.Hotels.Count == 0)
+                {
+
+                    <div class="text-center py-5">
+                        <i class="bi bi-building-x fs-1"></i>
+                        <h3 class="mt-3">Bu tarihlerde uygun otel bulunamadı</h3>
+                        <p>Farklı tarihler veya daha az misafirle tekrar aramayı deneyin.</p>
+                        <a asp-controller="Home" asp-action="Index" class="btn btn-primary-sf">Yeni arama yap</a>
+                    </div>
+                }
+                <!-- Filters -->
+                <!-- offcanvas-lg: lg ve üzerinde sol kolonda görünür, altında offcanvas panele dönüşür -->
+                <aside class="col-lg-3">
+                    <div class="offcanvas-lg offcanvas-start filters-offcanvas" tabindex="-1" id="filtersPanel" aria-labelledby="filtersTitle">
+                        <div class="filters-card">
+                            <div class="filters-head">
+                                <h2 id="filtersTitle">Filtreler</h2>
+                                <div class="d-flex align-items-center gap-2">
+                                    <a href="#" class="clear-link">Tümünü Temizle</a>
+                                    <button type="button" class="btn-close d-lg-none" data-bs-dismiss="offcanvas"
+                                            data-bs-target="#filtersPanel" aria-label="Kapat"></button>
+                                </div>
+                            </div>
+
+                            <div class="accordion filter-accordion" id="filterAccordion">
+
+                                <!-- A. Fiyat -->
+                                <div class="accordion-item">
+                                    <h3 class="accordion-header">
+                                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#fPrice" aria-expanded="true" aria-controls="fPrice">
+                                            Gecelik Fiyat
+                                        </button>
+                                    </h3>
+                                    <div id="fPrice" class="accordion-collapse collapse show">
+                                        <div class="accordion-body">
+                                            <div class="price-range" aria-hidden="true">
+                                                <div class="price-track"><div class="price-fill"></div></div>
+                                                <span class="price-thumb" style="left: 12%"></span>
+                                                <span class="price-thumb" style="left: 78%"></span>
+                                            </div>
+                                            <div class="price-scale"><span>€50</span><span>€500+</span></div>
+                                            <div class="row g-2 mt-1">
+                                                <div class="col-6">
+                                                    <label class="mini-label" for="minPrice">Minimum</label>
+                                                    <div class="price-input">
+                                                        <span>€</span>
+                                                        <input type="number" id="minPrice" name="minPrice" value="100" min="0">
+                                                    </div>
+                                                </div>
+                                                <div class="col-6">
+                                                    <label class="mini-label" for="maxPrice">Maksimum</label>
+                                                    <div class="price-input">
+                                                        <span>€</span>
+                                                        <input type="number" id="maxPrice" name="maxPrice" value="400" min="0">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- B. Yıldız -->
+                                <div class="accordion-item">
+                                    <h3 class="accordion-header">
+                                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#fStars" aria-expanded="true" aria-controls="fStars">
+                                            Yıldız Sayısı
+                                        </button>
+                                    </h3>
+                                    <div id="fStars" class="accordion-collapse collapse show">
+                                        <div class="accordion-body">
+                                            <label class="filter-option">
+                                                <input class="form-check-input" type="checkbox" name="stars" value="5">
+                                                <span class="option-text"><span class="stars-inline">★★★★★</span> 5 Yıldız</span>
+                                                <span class="option-count">24</span>
+                                            </label>
+                                            <label class="filter-option">
+                                                <input class="form-check-input" type="checkbox" name="stars" value="4" checked>
+                                                <span class="option-text"><span class="stars-inline">★★★★</span> 4 Yıldız</span>
+                                                <span class="option-count">86</span>
+                                            </label>
+                                            <label class="filter-option">
+                                                <input class="form-check-input" type="checkbox" name="stars" value="3">
+                                                <span class="option-text"><span class="stars-inline">★★★</span> 3 Yıldız</span>
+                                                <span class="option-count">142</span>
+                                            </label>
+                                            <label class="filter-option">
+                                                <input class="form-check-input" type="checkbox" name="stars" value="2">
+                                                <span class="option-text"><span class="stars-inline">★★</span> 2 Yıldız</span>
+                                                <span class="option-count">57</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- C. Misafir Puanı -->
+                                <div class="accordion-item">
+                                    <h3 class="accordion-header">
+                                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#fScore" aria-expanded="true" aria-controls="fScore">
+                                            Misafir Puanı
+                                        </button>
+                                    </h3>
+                                    <div id="fScore" class="accordion-collapse collapse show">
+                                        <div class="accordion-body">
+                                            <label class="filter-option">
+                                                <input class="form-check-input" type="radio" name="minScore" value="9">
+                                                <span class="option-text"><span class="score-chip">9+</span> Olağanüstü</span>
+                                                <span class="option-count">38</span>
+                                            </label>
+                                            <label class="filter-option">
+                                                <input class="form-check-input" type="radio" name="minScore" value="8" checked>
+                                                <span class="option-text"><span class="score-chip">8+</span> Çok İyi</span>
+                                                <span class="option-count">164</span>
+                                            </label>
+                                            <label class="filter-option">
+                                                <input class="form-check-input" type="radio" name="minScore" value="7">
+                                                <span class="option-text"><span class="score-chip">7+</span> İyi</span>
+                                                <span class="option-count">271</span>
+                                            </label>
+                                            <label class="filter-option">
+                                                <input class="form-check-input" type="radio" name="minScore" value="6">
+                                                <span class="option-text"><span class="score-chip">6+</span> Keyifli</span>
+                                                <span class="option-count">352</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- D. Konaklama Türü -->
+                                <div class="accordion-item">
+                                    <h3 class="accordion-header">
+                                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#fType" aria-expanded="true" aria-controls="fType">
+                                            Konaklama Türü
+                                        </button>
+                                    </h3>
+                                    <div id="fType" class="accordion-collapse collapse show">
+                                        <div class="accordion-body">
+                                            <label class="filter-option">
+                                                <input class="form-check-input" type="checkbox" name="type" value="hotel" checked>
+                                                <span class="option-text">Otel</span>
+                                                <span class="option-count">248</span>
+                                            </label>
+                                            <label class="filter-option">
+                                                <input class="form-check-input" type="checkbox" name="type" value="apartment">
+                                                <span class="option-text">Daire</span>
+                                                <span class="option-count">96</span>
+                                            </label>
+                                            <label class="filter-option">
+                                                <input class="form-check-input" type="checkbox" name="type" value="aparthotel">
+                                                <span class="option-text">Apart Otel</span>
+                                                <span class="option-count">41</span>
+                                            </label>
+                                            <label class="filter-option">
+                                                <input class="form-check-input" type="checkbox" name="type" value="resort">
+                                                <span class="option-text">Resort</span>
+                                                <span class="option-count">7</span>
+                                            </label>
+                                            <label class="filter-option">
+                                                <input class="form-check-input" type="checkbox" name="type" value="hostel">
+                                                <span class="option-text">Hostel</span>
+                                                <span class="option-count">44</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- E. Popüler Özellikler -->
+                                <div class="accordion-item">
+                                    <h3 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#fFacilities" aria-expanded="false" aria-controls="fFacilities">
+                                            Popüler Özellikler
+                                        </button>
+                                    </h3>
+                                    <div id="fFacilities" class="accordion-collapse collapse">
+                                        <div class="accordion-body">
+                                            <label class="filter-option">
+                                                <input class="form-check-input" type="checkbox" name="facilities" value="wifi" checked>
+                                                <span class="option-text">Ücretsiz Wi-Fi</span>
+                                                <span class="option-count">412</span>
+                                            </label>
+                                            <label class="filter-option">
+                                                <input class="form-check-input" type="checkbox" name="facilities" value="breakfast">
+                                                <span class="option-text">Kahvaltı Dahil</span>
+                                                <span class="option-count">187</span>
+                                            </label>
+                                            <label class="filter-option">
+                                                <input class="form-check-input" type="checkbox" name="facilities" value="parking">
+                                                <span class="option-text">Otopark</span>
+                                                <span class="option-count">134</span>
+                                            </label>
+                                            <label class="filter-option">
+                                                <input class="form-check-input" type="checkbox" name="facilities" value="ac">
+                                                <span class="option-text">Klima</span>
+                                                <span class="option-count">398</span>
+                                            </label>
+                                            <label class="filter-option">
+                                                <input class="form-check-input" type="checkbox" name="facilities" value="pool">
+                                                <span class="option-text">Havuz</span>
+                                                <span class="option-count">22</span>
+                                            </label>
+                                            <label class="filter-option">
+                                                <input class="form-check-input" type="checkbox" name="facilities" value="spa">
+                                                <span class="option-text">Spa</span>
+                                                <span class="option-count">31</span>
+                                            </label>
+                                            <label class="filter-option">
+                                                <input class="form-check-input" type="checkbox" name="facilities" value="fitness">
+                                                <span class="option-text">Fitness Merkezi</span>
+                                                <span class="option-count">76</span>
+                                            </label>
+                                            <label class="filter-option">
+                                                <input class="form-check-input" type="checkbox" name="facilities" value="pets">
+                                                <span class="option-text">Evcil Hayvan Kabul Edilir</span>
+                                                <span class="option-count">118</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- F. Bölge -->
+                                <div class="accordion-item">
+                                    <h3 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#fDistrict" aria-expanded="false" aria-controls="fDistrict">
+                                            Bölge
+                                        </button>
+                                    </h3>
+                                    <div id="fDistrict" class="accordion-collapse collapse">
+                                        <div class="accordion-body">
+                                            <label class="filter-option">
+                                                <input class="form-check-input" type="checkbox" name="district" value="centro">
+                                                <span class="option-text">Milano Merkez</span>
+                                                <span class="option-count">128</span>
+                                            </label>
+                                            <label class="filter-option">
+                                                <input class="form-check-input" type="checkbox" name="district" value="centrale">
+                                                <span class="option-text">Stazione Centrale</span>
+                                                <span class="option-count">94</span>
+                                            </label>
+                                            <label class="filter-option">
+                                                <input class="form-check-input" type="checkbox" name="district" value="navigli">
+                                                <span class="option-text">Navigli</span>
+                                                <span class="option-count">47</span>
+                                            </label>
+                                            <label class="filter-option">
+                                                <input class="form-check-input" type="checkbox" name="district" value="duomo">
+                                                <span class="option-text">Duomo</span>
+                                                <span class="option-count">63</span>
+                                            </label>
+                                            <label class="filter-option">
+                                                <input class="form-check-input" type="checkbox" name="district" value="brera">
+                                                <span class="option-text">Brera</span>
+                                                <span class="option-count">38</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Mobilde sonuçları göster butonu -->
+                            <div class="filters-footer d-lg-none">
+                                <button type="button" class="btn btn-primary-sf w-100" data-bs-dismiss="offcanvas" data-bs-target="#filtersPanel">
+                                    436 sonucu göster
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+                <!-- Hotel Results -->
+               else{
+                <partial name="_HotelList" model="Model" />
+               }
+            
+              
+            </div>
+        </div>
+    </section>
+
+</main>
+
