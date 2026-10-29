@@ -46,6 +46,12 @@ namespace Hotels.Web.Models.ViewModels
 
             if (PriceMin is not null && PriceMax is not null && PriceMin > PriceMax)
                 yield return new ValidationResult("En düşük fiyat, en yüksek fiyattan büyük olamaz.", new[] { nameof(PriceMin) });
+            if (!Currencies.Supported.Contains(Currency))
+                yield return new ValidationResult("Geçersiz para birimi.", new[] { nameof(Currency) });
+        }
+        public static class Currencies
+        {
+            public static readonly string[] Supported = { "EUR", "USD", "TRY", "GBP" };
         }
     }
 }
