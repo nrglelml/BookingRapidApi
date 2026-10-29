@@ -18,6 +18,7 @@
         public string SearchDestination { get; set; } = string.Empty;
         public string SearchHotels { get; set; } = string.Empty;
         public string HotelDetails { get; set; } = string.Empty;
+        public string HotelPhotos { get; set; } = string.Empty;
 
     }
 }

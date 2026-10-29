@@ -6,5 +6,6 @@ namespace Hotels.Web.Services
     {
         Task<Destination?> FindDestinationAsync(string city);
         Task<HotelSearchResult> SearchHotelsAsync(Destination destination, HotelSearchViewModel search);
+        Task<HotelDetailViewModel?> GetHotelDetailsAsync(int hotelId, HotelSearchViewModel search);
     }
 }

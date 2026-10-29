@@ -53,4 +53,45 @@ namespace Hotels.Web.Models.Api
         [JsonPropertyName("value")] public decimal? Value { get; set; }
         [JsonPropertyName("currency")] public string? Currency { get; set; }
     }
+
+    public class HotelDetailsDto
+    {
+        [JsonPropertyName("hotel_id")] public int HotelId { get; set; }
+        [JsonPropertyName("hotel_name")] public string? HotelName { get; set; }
+        [JsonPropertyName("address")] public string? Address { get; set; }
+        [JsonPropertyName("city")] public string? City { get; set; }
+        [JsonPropertyName("country_trans")] public string? Country { get; set; }
+        [JsonPropertyName("review_nr")] public int? ReviewCount { get; set; }
+        [JsonPropertyName("rawData")] public HotelRawDataDto? RawData { get; set; }
+        [JsonPropertyName("facilities_block")] public FacilitiesBlockDto? FacilitiesBlock { get; set; }
+        [JsonPropertyName("product_price_breakdown")] public ProductPriceBreakdownDto? PriceBreakdown { get; set; }
+        [JsonPropertyName("latitude")] public double? Latitude { get; set; }
+        [JsonPropertyName("longitude")] public double? Longitude { get; set; }
+    }
+
+    public class HotelRawDataDto
+    {
+        [JsonPropertyName("reviewScore")] public double? ReviewScore { get; set; }
+        [JsonPropertyName("reviewScoreWord")] public string? ReviewScoreWord { get; set; }
+    }
+
+    public class FacilitiesBlockDto
+    {
+        [JsonPropertyName("facilities")] public List<FacilityDto>? Facilities { get; set; }
+    }
+
+    public class FacilityDto
+    {
+        [JsonPropertyName("name")] public string? Name { get; set; }
+    }
+
+    public class ProductPriceBreakdownDto
+    {
+        [JsonPropertyName("gross_amount")] public PriceDto? GrossAmount { get; set; }
+    }
+
+    public class HotelPhotoDto
+    {
+        [JsonPropertyName("url")] public string? Url { get; set; }
+    }
 }

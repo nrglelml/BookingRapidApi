@@ -64,7 +64,7 @@ namespace Hotels.Web.Services
             if (data?.Hotels is null)
                 return new HotelSearchResult(new List<HotelCardViewModel>(), null);
 
-             var hotels= data.Hotels
+             var hotels= data.Hotels //mapping
                 .Where(h => h.Property is not null)
                 .Select(h => new HotelCardViewModel
                 {
@@ -79,10 +79,7 @@ namespace Hotels.Web.Services
                     ReviewCount = h.Property.ReviewCount,
                     CityName = h.Property.CityName,
                     Stars = h.Property.Stars,
-                    MapUrl = h.Property.Latitude is not null && h.Property.Longitude is not null
-    ? string.Create(CultureInfo.InvariantCulture,
-        $"https://www.google.com/maps?q={h.Property.Latitude},{h.Property.Longitude}")
-    : null,
+                    MapUrl =BuildMapUrl(h.Property.Latitude,h.Property.Longitude),
                 })
                 .ToList();
             return new HotelSearchResult(hotels, ParseTotalCount(data.Meta?.FirstOrDefault()?.Title)); // arama sonucu kaç taneyse onun için
@@ -145,6 +142,66 @@ namespace Hotels.Web.Services
 
             var digits = match.Value.Replace(".", "").Replace(",", "");
             return int.TryParse(digits, out var total) ? total : null;
+        }
+        private static string? BuildMapUrl(double? latitude, double? longitude) =>
+    latitude is not null && longitude is not null
+        ? string.Create(CultureInfo.InvariantCulture, $"https://www.google.com/maps?q={latitude},{longitude}")
+        : null;
+
+
+        public async Task<HotelDetailViewModel?> GetHotelDetailsAsync(int hotelId, HotelSearchViewModel search)
+        {
+            var inv = CultureInfo.InvariantCulture;
+
+            var query = new Dictionary<string, string?>
+            {
+                ["arrival_date"] = search.CheckIn!.ToString(DateFormat, inv),
+                ["departure_date"] = search.CheckOut!.ToString(DateFormat, inv),
+                ["adults"] = search.Adults.ToString(inv),
+                ["room_qty"] = search.Rooms.ToString(inv),
+                ["currency_code"] = search.Currency,
+                ["languagecode"] = "tr",
+                ["hotel_id"] = hotelId.ToString(inv)
+            };
+            var detailsUrl = QueryHelpers.AddQueryString(_endpoints.HotelDetails, query);
+           
+            var detailsTask=GetAsync<HotelDetailsDto>(detailsUrl);
+            var photosTask = GetPhotosAsync(hotelId);
+            await Task.WhenAll(detailsTask, photosTask);
+
+            var details = await detailsTask;
+            if(details is null)
+                return null;
+
+            return new HotelDetailViewModel //mapping
+            {
+                Id = details.HotelId,
+                Name = details.HotelName,
+                Address = details.Address,
+                City = details.City,
+                Country = details.Country,
+                Rating = details.RawData?.ReviewScore,
+                Price = details.PriceBreakdown?.GrossAmount?.Value,
+                Currency = details.PriceBreakdown?.GrossAmount?.Currency,
+                MapUrl = BuildMapUrl(details.Latitude, details.Longitude),
+                Photos = await photosTask,
+                Facilities = details.FacilitiesBlock?.Facilities?.Where(f => !string.IsNullOrWhiteSpace(f.Name)).Select(f => f.Name!).Distinct().ToList() ?? new List<string>()
+            };
+
+        }
+        private async Task<List<string>> GetPhotosAsync(int id)
+        {
+            try
+            {
+                var url = QueryHelpers.AddQueryString(_endpoints.HotelPhotos, "hotel_id",id.ToString(CultureInfo.InvariantCulture));
+                var photos = await GetAsync<List<HotelPhotoDto>>(url);
+                return photos?.Where(p => !string.IsNullOrWhiteSpace(p.Url)).Select(p => p.Url!).Take(15).ToList() ?? new List<string>();
+            }
+            catch (BookingApiException ex)
+            {
+                _logger.LogWarning(ex, "Otel fotoğrafları alınamadı. HotelId: {HotelId}", id);
+                return new List<string>();
+            }
         }
     }
 }
